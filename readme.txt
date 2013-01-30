@@ -1,0 +1,1 @@
+working C to connect directly to metepreter handler. includes unobfuscated and obfuscated c.
