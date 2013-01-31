@@ -55,7 +55,7 @@ int main(int argc) {
 	winsock_init();
 	char argv[3][25];
 
-	strcpy(argv[1],"192.168.1.116");
+	strcpy(argv[1],"10.20.20.230");
 	strcpy(argv[2],"443");
 
 	SOCKET my_socket = wsconnect(argv[1], atoi(argv[2]));
