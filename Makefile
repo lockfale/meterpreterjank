@@ -20,3 +20,8 @@ clean:
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 
+x64:
+	$(MAKE) -$(MAKEFLAGS) EXECUTABLE=helpdesk_x64.exe CC=x86_64-w64-mingw32-gcc CFLAGS='$(CFLAGS) -D ISX64'
+
+x64_clean:
+	$(MAKE) -$(MAKEFLAGS) clean EXECUTABLE=helpdesk_x64.exe
