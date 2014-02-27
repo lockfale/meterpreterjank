@@ -1,0 +1,21 @@
+* connect to the handler
+* read a 4-byte length
+* allocate a length-byte buffer
+* mark it as writable and executable (on Windows you'll need VirtualProtect for this)
+* read length bytes into that buffer
+* jump to the buffer. easiest way to do this in C is cast it to a function pointer and call it.
+
+via egypt
+
+Assuming x86 arch, you have to make sure that the EDI register contains your socket descriptor (the value of the ConnectSocket variable). You can do this via inline asm, but it might be easier to just prepend the 5 bytes for setting it to your shellcode:
+
+BF 78 56 34 12   mov edi, 0x12345678
+
+For 64 bit, you have to use the RDI register (and need 10 bytes):
+
+48 BF 78 56 34 12 00 00 00 00    mov rdi, 0x12345678
+
+PS: This is the reason why the calling convention within Metasploit is
+called "sockedi"
+
+Via Michael Schierl
